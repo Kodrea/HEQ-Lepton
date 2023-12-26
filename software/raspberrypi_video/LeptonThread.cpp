@@ -5,7 +5,6 @@
 #include "Palettes.h"
 #include "SPI.h"
 #include "Lepton_I2C.h"
-#include "Lepton_SYS.h"
 
 #define PACKET_SIZE 164
 #define PACKET_SIZE_UINT16 (PACKET_SIZE/2)
@@ -241,6 +240,8 @@ void LeptonThread::run()
 	//GetNormalizationFactor();	//what does this do?
 	GetAgcCalculationState();
 	lepton_get_aux_temp_kelvin();
+	lepton_get_scene_statistics();
+
 
 	int statLoop = 0;
 	while(true) {
@@ -409,7 +410,7 @@ void LeptonThread::run()
 
 		//update statistics every 30 frames
 		if (statLoop % 30 == 0) {
-			lepton_get_histogram_statistics();
+			lepton_get_scene_statistics();
 			GetAgcCalculationState();
 		}
 		//lets emit the signal for update

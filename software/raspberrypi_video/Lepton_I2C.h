@@ -51,5 +51,13 @@ void GetAgcCalculationState();
 // Get Histogram Statistics
 void lepton_get_histogram_statistics();
 
+/*********************************************************************************************************
+ * SYS and OEM Commands
+ ********************************************************************************************************/
+
+void lepton_get_aux_temp_kelvin();  // AUX temp In kelvin
+void lepton_get_scene_statistics(); // Scene Statistics
+void lepton_set_scene_roi(uint16_t startCol, uint16_t startRow, uint16_t endCol, uint16_t endRow); // Scene ROI
+void lepton_get_scene_roi(); // Scene ROI
 
 #endif

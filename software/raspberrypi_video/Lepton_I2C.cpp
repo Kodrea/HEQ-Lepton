@@ -442,6 +442,106 @@ void lepton_get_histogram_statistics() {
     }
 }
 
+/*************************************************************************************************************/
+/** SYS COMMANDS	                                                                                        **/
+/*************************************************************************************************************/
+
+// SYS Status
+void lepton_get_status() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_STATUS_T currentStatus;
+	LEP_RESULT result = LEP_GetSysStatus(&_port, &currentStatus);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error getting status. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Current status: " << currentStatus << std::endl;
+	}
+}
+
+
+// AUX temp In kelvin
+void lepton_get_aux_temp_kelvin() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_SYS_AUX_TEMPERATURE_KELVIN_T currentAuxTemp;
+	LEP_RESULT result = LEP_GetSysAuxTemperatureKelvin(&_port, &currentAuxTemp);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error getting AUX temp in kelvin. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Current AUX temp in kelvin: " << currentAuxTemp << std::endl;
+	}
+}
+
+// SYS Scene Statistics
+void lepton_get_scene_statistics() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_SYS_SCENE_STATISTICS_T currentSceneStats;
+	LEP_RESULT result = LEP_GetSysSceneStatistics(&_port, &currentSceneStats);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error getting Scene Statistics. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Current Scene Statistics: " << std::endl;
+		std::cout << "Scene Mean Intensity: " << currentSceneStats.meanIntensity << std::endl;
+		std::cout << "Scene Max Intensity: " << currentSceneStats.maxIntensity << std::endl;
+		std::cout << "Scene Min Intensity: " << currentSceneStats.minIntensity << std::endl;
+		std::cout << "Scene Population: " << currentSceneStats.numPixels << std::endl;
+	}
+}
+
+// SYS Scene Set ROI
+void lepton_set_scene_roi(uint16_t startCol, uint16_t startRow, uint16_t endCol, uint16_t endRow) {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_SYS_VIDEO_ROI_T sceneRoi;
+	sceneRoi.startCol = startCol;
+	sceneRoi.startRow = startRow;
+	sceneRoi.endCol = endCol;
+	sceneRoi.endRow = endRow;
+	LEP_RESULT result = LEP_SetSysSceneRoi(&_port, sceneRoi);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error setting Scene ROI. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Scene ROI set successfully" << std::endl;
+	}
+}
+
+// SYS Scene Roi
+void lepton_get_scene_roi() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_SYS_VIDEO_ROI_T currentSceneRoi;
+	LEP_RESULT result = LEP_GetSysSceneRoi(&_port, &currentSceneRoi);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error getting Scene ROI. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Current Scene ROI: " << std::endl;
+		std::cout << "Scene Start Column: " << currentSceneRoi.startCol << std::endl;
+		std::cout << "Scene Start Row: " << currentSceneRoi.startRow << std::endl;
+		std::cout << "Scene End Column: " << currentSceneRoi.endCol << std::endl;
+		std::cout << "Scene End Row: " << currentSceneRoi.endRow << std::endl;
+	}
+}
+
+
+/*************************************************************************************************************/
+/** VID COMMANDS	                                                                                        **/
+/*************************************************************************************************************/
+
+
+
+
 
 void lepton_reboot() {
 	if(!_connected) {
