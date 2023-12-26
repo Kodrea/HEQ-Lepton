@@ -8,6 +8,9 @@
 #include <QtDebug>
 #include <QString>
 #include <QPushButton>
+#include <QSlider>
+#include <QVBoxLayout>
+#include <QSize>
 
 #include "LeptonThread.h"
 #include "MyLabel.h"
@@ -33,7 +36,20 @@ void printUsage(char *cmd) {
                " -max x  override maximum value for scaling (0 - 65535)\n"
                "           [default] automatic scaling range adjustment\n"
                "           e.g. -max 32000\n"
-               " -d x    log level (0-255)\n"
+               " -d x      log level (0-255)\n"
+			   " -mid x    set AGC midpoint (127-65534)\n"
+			   " -gain x   set AGC max gain (1-4)\n" 
+			   " -AGC      set AGC policy (0,1,2)"
+               "           [default] 0: off"
+			   "	   	   1: Histogram Equalization 8-bit"
+			   "		   2: Histogram Equalization 14-bit\n"
+			   "           3: Linear Histogram Equalization\n"	
+			   " -dampen x set HEQ dampening factor (0-100)\n"	
+			   " -clipH x  set HEQ clip limit high (0-19200)\n"	   			
+			   " -clipL x  set HEQ clip limit low (0-19200)\n"
+			   " -binExt x set HEQ bin extension (0-16)\n"
+			   " -empty x  set HEQ empty counts (0-65535)\n"
+			   " -norm x   set HEQ normalization factor (0-65535)\n"
                "", cmdname, cmdname);
 	return;
 }
@@ -46,6 +62,19 @@ int main( int argc, char **argv )
 	int rangeMin = -1; //
 	int rangeMax = -1; //
 	int loglevel = 0;
+
+	int midpoint = 0;
+	int gain = 0;
+	int agcSelect = 0;
+
+	uint16_t dampen = 0;
+	uint16_t clipHigh = 0;
+	uint16_t clipLow = 0;
+	uint16_t binExtension = 0;
+	uint16_t emptyCounts = 0;
+	uint16_t normalizationFactor = 0;
+
+
 	for(int i=1; i < argc; i++) {
 		if (strcmp(argv[i], "-h") == 0) {
 			printUsage(argv[0]);
@@ -96,33 +125,131 @@ int main( int argc, char **argv )
 				i++;
 			}
 		}
-	}
 
-	//create the app
-	QApplication a( argc, argv );
-	
-	QWidget *myWidget = new QWidget;
-	myWidget->setGeometry(400, 300, 340, 290);
-
-	//create an image placeholder for myLabel
-	//fill the top left corner with red, just bcuz
-	QImage myImage;
-	myImage = QImage(320, 240, QImage::Format_RGB888);
-	QRgb red = qRgb(255,0,0);
-	for(int i=0;i<80;i++) {
-		for(int j=0;j<60;j++) {
-			myImage.setPixel(i, j, red);
+		else if ((strcmp(argv[i], "-mid") == 0) && (i + 1 != argc)) {
+			int val = std::atoi(argv[i + 1]);
+			if ((127 <= val) && (val <= 65534)) {
+				midpoint = val;
+				i++;
+			}
+		}
+		else if ((strcmp(argv[i], "-gain") == 0) && (i + 1 != argc)) {
+			int val = std::atoi(argv[i + 1]);
+			if ((1 <= val) && (val <= 4)) {
+				gain = val;
+				i++;
+			}
+		}
+		else if ((strcmp(argv[i], "-AGC") == 0) && (i + 1 != argc)) {
+			int val = std::atoi(argv[i + 1]);
+			if ((0 <= val) && (val <= 2)) {
+				agcSelect = val;
+				i++;
+			}
+		}
+		else if ((strcmp(argv[i], "-dampen") == 0) && (i + 1 != argc)) {
+			int val = std::atoi(argv[i + 1]);
+			if ((0 <= val) && (val <= 100)) {
+				dampen = val;
+				i++;
+			}
+		}
+		else if ((strcmp(argv[i], "-clipH") == 0) && (i + 1 != argc)) {
+			int val = std::atoi(argv[i + 1]);
+			if ((0 <= val) && (val <= 19200)) {
+				clipHigh = val;
+				i++;
+			}
+		}
+		else if ((strcmp(argv[i], "-clipL") == 0) && (i + 1 != argc)) {
+			int val = std::atoi(argv[i + 1]);
+			if ((0 <= val) && (val <= 19200)) {
+				clipLow = val;
+				i++;
+			}
+		}
+		else if ((strcmp(argv[i], "-binExt") == 0) && (i + 1 != argc)) {
+			int val = std::atoi(argv[i + 1]);
+			if ((0 <= val) && (val <= 16)) {
+				binExtension = val;
+				i++;
+			}
+		}
+		else if ((strcmp(argv[i], "-empty") == 0) && (i + 1 != argc)) {
+			int val = std::atoi(argv[i + 1]);
+			if ((0 <= val) && (val <= 65535)) {
+				emptyCounts = val;
+				i++;
+			}
+		}
+		else if ((strcmp(argv[i], "-norm") == 0) && (i + 1 != argc)) {
+			int val = std::atoi(argv[i + 1]);
+			if ((0 <= val) && (val <= 65535)) {
+				normalizationFactor = val;
+				i++;
+			}
 		}
 	}
+	//create the app
+    QApplication a(argc, argv);
 
-	//create a label, and set it's image to the placeholder
-	MyLabel myLabel(myWidget);
-	myLabel.setGeometry(10, 10, 320, 240);
-	myLabel.setPixmap(QPixmap::fromImage(myImage));
+    // Set the main window
+    QWidget *myWidget = new QWidget;
+    myWidget->setGeometry(20, 20, 850, 450); // Reduced size by 50 pixels for both width and height
 
-	//create a FFC button
-	QPushButton *button1 = new QPushButton("Perform FFC", myWidget);
-	button1->setGeometry(320/2-50, 290-35, 100, 30);
+    // Create an image placeholder
+    QImage myImage(160, 120, QImage::Format_RGB888); // Original size
+    QRgb red = qRgb(255, 0, 0);
+    for(int i = 0; i < 80; i++) {
+        for(int j = 0; j < 60; j++) {
+            myImage.setPixel(i, j, red);
+        }
+    }
+
+	// Create Boot Screen
+
+    // Enlarge Image
+	int IWidth = 550; // Adjusted width
+	int IHeight = 408; // Adjusted height
+    QSize maxSize(IWidth, IHeight); // Adjusted width and reduced height for the space at the top
+
+    // Scale the image
+    QImage scaledImage = myImage.scaled(maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    // Create a label and set its image
+    MyLabel myLabel(myWidget);
+    myLabel.setGeometry(0, 0, scaledImage.width(), scaledImage.height()); // Start the image in the top left corner
+    myLabel.setPixmap(QPixmap::fromImage(scaledImage));
+
+    // Create a FFC button and adjust its position
+    QPushButton *button1 = new QPushButton("Perform FFC", myWidget);
+    button1->setGeometry(100, IHeight+5, 100, 30); // Adjusted to be centered at the bottom
+
+	/* Create Sliders to Adjust AGC Parameters */
+	// Clip Low slider
+	QSlider *slider1 = new QSlider(Qt::Vertical, myWidget);
+	slider1->setGeometry(IWidth+20, 0, 20, IHeight); // Adjusted to be centered at the bottom
+	slider1->setRange(0, 1024);
+	slider1->setValue(clipLow);
+	slider1->setTickPosition(QSlider::TicksAbove);
+    slider1->setTickInterval(250);
+	// Midpoint slider
+	QSlider *slider2 = new QSlider(Qt::Vertical, myWidget);
+	slider2->setGeometry(IWidth+50, 0, 20, IHeight); // Adjusted to be centered at the bottom
+	slider2->setRange(28000, 33000);
+	slider2->setValue(midpoint);
+	slider2->setTickPosition(QSlider::TicksAbove);
+    slider2->setTickInterval(1000);
+	// Dampening slider
+	QSlider *slider3 = new QSlider(Qt::Vertical, myWidget);
+	slider3->setGeometry(IWidth+70, 0, 20, IHeight); // Adjusted to be centered at the bottom
+	slider3->setRange(0, 100);
+	slider3->setValue(dampen);
+	slider3->setTickPosition(QSlider::TicksAbove);
+    slider3->setTickInterval(10);
+
+
+
 
 	//create a thread to gather SPI data
 	//when the thread emits updateImage, the label should update its image accordingly
@@ -132,12 +259,27 @@ int main( int argc, char **argv )
 	thread->useLepton(typeLepton);
 	thread->useSpiSpeedMhz(spiSpeed);
 	thread->setAutomaticScalingRange();
+	//AGC Commands
+	thread->selectAGC(agcSelect);
+	thread->useMidpoint(midpoint);
+	thread->useGain(gain);
+	thread->HeqVariables(dampen, clipHigh, clipLow, binExtension, emptyCounts, normalizationFactor);
+
+
 	if (0 <= rangeMin) thread->useRangeMinValue(rangeMin);
 	if (0 <= rangeMax) thread->useRangeMaxValue(rangeMax);
+
 	QObject::connect(thread, SIGNAL(updateImage(QImage)), &myLabel, SLOT(setImage(QImage)));
 	
 	//connect ffc button to the thread's ffc action
 	QObject::connect(button1, SIGNAL(clicked()), thread, SLOT(performFFC()));
+	// slider for clip Low
+	QObject::connect(slider1, SIGNAL(valueChanged(int)), thread, SLOT(clipLowSlider(int)));
+	// slider for midpoint
+	QObject::connect(slider2, SIGNAL(valueChanged(int)), thread, SLOT(midpointSlider(int)));
+	// slider for dampening
+	QObject::connect(slider3, SIGNAL(valueChanged(int)), thread, SLOT(dampenSlider(int)));
+
 	thread->start();
 	
 	myWidget->show();

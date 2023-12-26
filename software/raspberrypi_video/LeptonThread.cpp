@@ -5,6 +5,7 @@
 #include "Palettes.h"
 #include "SPI.h"
 #include "Lepton_I2C.h"
+#include "Lepton_SYS.h"
 
 #define PACKET_SIZE 164
 #define PACKET_SIZE_UINT16 (PACKET_SIZE/2)
@@ -35,6 +36,23 @@ LeptonThread::LeptonThread() : QThread()
 	autoRangeMax = true;
 	rangeMin = 30000;
 	rangeMax = 32000;
+
+	//ROI
+	startCol = 40;
+	startRow = 20;
+	endCol = 120;
+	endRow = 100;
+
+	midpoint = 0;	
+	gain = 0;
+	agcSelect = 0;
+	dampen = 0;
+	clipHigh = 0;
+	clipLow = 0;
+	binExtension = 0;
+	emptyCounts = 0;
+	normalizationFactor = 0;
+
 }
 
 LeptonThread::~LeptonThread() {
@@ -104,6 +122,46 @@ void LeptonThread::useRangeMaxValue(uint16_t newMaxValue)
 	rangeMax = newMaxValue;
 }
 
+void LeptonThread::useMidpoint(uint16_t newMidpoint)
+{
+	midpoint = newMidpoint;
+}
+
+void LeptonThread::useGain(uint16_t newGain)
+{
+	gain = newGain;
+}
+
+void LeptonThread::selectAGC(int newAGCSelect)
+{
+	agcSelect = newAGCSelect;
+}
+
+void LeptonThread::HeqVariables(uint16_t newDampen, uint16_t newClipHigh, uint16_t newClipLow, uint16_t newBinExtension, uint16_t newEmptyCounts, uint16_t newNormalizationFactor)
+{
+	dampen = newDampen;
+	clipHigh = newClipHigh;
+	clipLow = newClipLow;
+	binExtension = newBinExtension;
+	emptyCounts = newEmptyCounts;
+	normalizationFactor = newNormalizationFactor;
+}
+
+
+/* Sliders and Buttons for AGC */
+void LeptonThread::clipLowSlider(int adjClipLow) {
+    SetHeqClipLow(adjClipLow);
+	GetHeqClipLow();
+}
+void LeptonThread::midpointSlider(int adjMidpoint) {
+	lepton_set_heq_midpoint(adjMidpoint);
+	lepton_get_agc_heq_midpoint();
+}
+void LeptonThread::dampenSlider(int adjDampen) {
+	SetHeqDampening(adjDampen);
+	GetHeqDampening();
+}
+
 void LeptonThread::run()
 {
 	//create the initial image
@@ -121,8 +179,72 @@ void LeptonThread::run()
 	//open spi port
 	SpiOpenPort(0, spiSpeed);
 
-	while(true) {
+	if(agcSelect == 0){
+		lepton_disable_agc();
+	}
+	else if(agcSelect == 1){
+		lepton_enable_agc();
+		lepton_set_policy_heq();
+		lepton_set_heq_8bit_scale_factor();
+	}
+	else if(agcSelect == 2){
+		lepton_enable_agc();
+		lepton_set_policy_heq();
+		lepton_set_heq_14bit_scale_factor();
+	}
+	else if(agcSelect == 3){
+		lepton_enable_agc();
+		lepton_set_policy_linear();
+	}
+	usleep(5000);
+	check_agc_state();
 
+	if(agcSelect != 0){
+		lepton_set_agc_roi(60, 40, 100, 80);
+		if(gain != 0){
+			lepton_max_gain(gain);
+		}
+		if (midpoint != 0){
+			lepton_set_heq_midpoint(midpoint);
+		}
+	}
+	if(dampen != 0){
+		SetHeqDampening(dampen);
+	}
+	if(clipHigh != 0){
+		SetHeqClipHigh(clipHigh);
+	}
+	if(clipLow != 0){
+		SetHeqClipLow(clipLow);
+	}
+	if(binExtension != 0){
+		SetBinExtension(binExtension);
+	}
+	if(emptyCounts != 0){
+		SetEmptyCounts(emptyCounts);
+	}
+	/*
+	if(normalizationFactor != 0){
+		SetNormalizationFactor(normalizationFactor);
+	}
+	*/
+
+	lepton_get_agc_max_gain();
+	lepton_get_agc_heq_midpoint();
+	lepton_get_agc_roi();
+	lepton_get_histogram_statistics();
+	GetBinExtension();
+	GetEmptyCounts();	
+	GetHeqClipHigh();
+	GetHeqClipLow();
+	GetHeqDampening();
+	//GetNormalizationFactor();	//what does this do?
+	GetAgcCalculationState();
+	lepton_get_aux_temp_kelvin();
+
+	int statLoop = 0;
+	while(true) {
+		statLoop ++;
 		//read data packets from lepton over SPI
 		int resets = 0;
 		int segmentNumber = -1;
@@ -131,6 +253,7 @@ void LeptonThread::run()
 			read(spi_cs0_fd, result+sizeof(uint8_t)*PACKET_SIZE*j, sizeof(uint8_t)*PACKET_SIZE);
 			int packetNumber = result[j*PACKET_SIZE+1];
 			if(packetNumber != j) {
+				log_message(4, "[ERROR] Packet number mismatch. PacketNumber: " + std::to_string(packetNumber) + " j: " + std::to_string(j));
 				j = -1;
 				resets += 1;
 				usleep(1000);
@@ -189,7 +312,7 @@ void LeptonThread::run()
 
 		if ((autoRangeMin == true) || (autoRangeMax == true)) {
 			if (autoRangeMin == true) {
-				maxValue = 65535;
+				minValue = 65535;
 			}
 			if (autoRangeMax == true) {
 				maxValue = 0;
@@ -220,6 +343,8 @@ void LeptonThread::run()
 		}
 
 		int row, column;
+		uint8_t value8;
+		uint8_t valueFrameBuffer8;
 		uint16_t value;
 		uint16_t valueFrameBuffer;
 		QRgb color;
@@ -232,8 +357,14 @@ void LeptonThread::run()
 				}
 
 				//flip the MSB and LSB at the last second
-				valueFrameBuffer = (shelf[iSegment - 1][i*2] << 8) + shelf[iSegment - 1][i*2+1];
-				if (valueFrameBuffer == 0) {
+				if(agcSelect == 1){
+					valueFrameBuffer8 = shelf[iSegment - 1][i * 2 + 1];
+				}
+				else{
+					valueFrameBuffer = (shelf[iSegment - 1][i*2] << 8) + shelf[iSegment - 1][i*2+1];
+				}
+				
+				if (valueFrameBuffer == 0 && agcSelect != 1) {
 					// Why this value is 0?
 					n_zero_value_drop_frame++;
 					if ((n_zero_value_drop_frame % 12) == 0) {
@@ -242,11 +373,22 @@ void LeptonThread::run()
 					break;
 				}
 
-				//
-				value = (valueFrameBuffer - minValue) * scale;
-				int ofs_r = 3 * value + 0; if (colormapSize <= ofs_r) ofs_r = colormapSize - 1;
-				int ofs_g = 3 * value + 1; if (colormapSize <= ofs_g) ofs_g = colormapSize - 1;
-				int ofs_b = 3 * value + 2; if (colormapSize <= ofs_b) ofs_b = colormapSize - 1;
+				//declare ofs
+				int ofs_r, ofs_g, ofs_b;
+				if(agcSelect == 1){
+					value8 = valueFrameBuffer8;
+					log_message(2, "value: " + std::to_string(value8));
+					ofs_r = 3 * value8 + 0; if (colormapSize <= ofs_r) ofs_r = colormapSize - 1;
+					ofs_g = 3 * value8 + 1; if (colormapSize <= ofs_g) ofs_g = colormapSize - 1;
+					ofs_b = 3 * value8 + 2; if (colormapSize <= ofs_b) ofs_b = colormapSize - 1;
+				}
+				else{
+					value = (valueFrameBuffer - minValue) * scale;
+					log_message(2, "value: " + std::to_string(value));
+					ofs_r = 3 * value + 0; if (colormapSize <= ofs_r) ofs_r = colormapSize - 1;
+					ofs_g = 3 * value + 1; if (colormapSize <= ofs_g) ofs_g = colormapSize - 1;
+					ofs_b = 3 * value + 2; if (colormapSize <= ofs_b) ofs_b = colormapSize - 1;
+				}				
 				color = qRgb(colormap[ofs_r], colormap[ofs_g], colormap[ofs_b]);
 				if (typeLepton == 3) {
 					column = (i % PACKET_SIZE_UINT16) - 2 + (myImageWidth / 2) * ((i % (PACKET_SIZE_UINT16 * 2)) / PACKET_SIZE_UINT16);
@@ -265,6 +407,11 @@ void LeptonThread::run()
 			n_zero_value_drop_frame = 0;
 		}
 
+		//update statistics every 30 frames
+		if (statLoop % 30 == 0) {
+			lepton_get_histogram_statistics();
+			GetAgcCalculationState();
+		}
 		//lets emit the signal for update
 		emit updateImage(myImage);
 	}
@@ -285,3 +432,20 @@ void LeptonThread::log_message(uint16_t level, std::string msg)
 	}
 }
 
+void LeptonThread::enableAGC() {
+    lepton_enable_agc();
+}
+
+void LeptonThread::setHeqPolicy() {
+    lepton_set_policy_heq();
+}
+
+// HEQ 8-bit Scale Factor
+void LeptonThread::setHeqScaleFactor8() {
+	lepton_set_heq_8bit_scale_factor();
+}
+
+// HEQ 14-bit Scale Factor
+void LeptonThread::setHeqScaleFactor14() {
+	lepton_set_heq_14bit_scale_factor();
+}

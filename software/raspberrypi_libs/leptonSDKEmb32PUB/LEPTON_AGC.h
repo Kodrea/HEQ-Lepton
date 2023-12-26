@@ -104,7 +104,7 @@ extern "C"
 /* Linear
 */
    #define LEP_AGC_MAX_HISTOGRAM_CLIP_PERCENT      100         /* Scale is 10x  100 == 10.0%  */
-   #define LEP_AGC_MAX_HISTOGRAM_TAIL_SIZE         (80*60)     /* Scale is 1x  units: pixels  */
+   #define LEP_AGC_MAX_HISTOGRAM_TAIL_SIZE         (160*120)     /* Scale is 1x  units: pixels  */
    #define LEP_AGC_MIN_LINEAR_MAX_GAIN              1          /* Scale is 1x    */
    #define LEP_AGC_MAX_LINEAR_MAX_GAIN              4          /* Scale is 1x    */
    #define LEP_AGC_MIN_LINEAR_MIDPOINT              1          /* Scale is 1x    */
@@ -117,8 +117,8 @@ extern "C"
    #define LEP_AGC_MIN_HEQ_MAX_GAIN                 1          /* Scale is 1x    */
    #define LEP_AGC_MAX_HEQ_MAX_GAIN                 4          /* Scale is 1x    */
 
-   #define LEP_AGC_HEQ_CLIP_LIMIT_HIGH             (80*60)     /* Scale is 1x  units: pixels  */
-   #define LEP_AGC_HEQ_CLIP_LIMIT_LOW              (80*60)     /* Scale is 1x  units: pixels  */
+   #define LEP_AGC_HEQ_CLIP_LIMIT_HIGH             (160*120)     /* Scale is 1x  units: pixels  */
+   #define LEP_AGC_HEQ_CLIP_LIMIT_LOW              (160*120)     /* Scale is 1x  units: pixels  */
    #define LEP_AGC_HEQ_MAX_BIN_EXTENSION            16         /* Scale is 1x  units: bins  */
 
    #define LEP_AGC_MIN_HEQ_MIDPOINT                127         /* Scale is 1x    */
@@ -126,8 +126,8 @@ extern "C"
 
 /* ROI
 */ 
-   #define LEP_AGC_MAX_COL                         79
-   #define LEP_AGC_MAX_ROW                         59
+   #define LEP_AGC_MAX_COL                         159
+   #define LEP_AGC_MAX_ROW                         119
    #define LEP_AGC_MIN_COL                         0
    #define LEP_AGC_MIN_ROW                         0
 

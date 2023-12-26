@@ -31,8 +31,24 @@ public:
   void useRangeMaxValue(uint16_t);
   void run();
 
+// AGC Commands
+  void enableAGC();
+  void setHeqPolicy();
+  void setHeqScaleFactor8();
+  void setHeqScaleFactor14();
+  void useMidpoint(uint16_t);
+  void useGain(uint16_t);
+  void selectAGC(int);
+  void HeqVariables(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
+
+  //SYS and OEM Commands
+
+
 public slots:
   void performFFC();
+  void clipLowSlider(int);
+  void midpointSlider(int);
+  void dampenSlider(int);
 
 signals:
   void updateText(QString);
@@ -49,6 +65,23 @@ private:
   unsigned int spiSpeed;
   bool autoRangeMin;
   bool autoRangeMax;
+  uint16_t startCol;
+  uint16_t startRow;
+  uint16_t endCol;
+  uint16_t endRow;
+  uint16_t midpoint;
+  uint16_t gain;
+  int agcSelect;
+  uint16_t dampen;
+  uint16_t clipHigh;
+  uint16_t clipLow;
+  uint16_t binExtension;
+  uint16_t emptyCounts;
+  uint16_t normalizationFactor;
+
+
+
+
   uint16_t rangeMin;
   uint16_t rangeMax;
   int myImageWidth;
