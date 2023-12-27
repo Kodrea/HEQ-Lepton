@@ -43,12 +43,16 @@ public:
 
   //SYS and OEM Commands
 
+ 
+
 
 public slots:
   void performFFC();
   void clipLowSlider(int);
   void midpointSlider(int);
   void dampenSlider(int);
+  //VID Focus
+  void freezeToggle();
 
 signals:
   void updateText(QString);

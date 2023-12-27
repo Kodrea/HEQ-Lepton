@@ -5,6 +5,7 @@
 #include "leptonSDKEmb32PUB/LEPTON_OEM.h"
 #include "leptonSDKEmb32PUB/LEPTON_Types.h"
 #include "leptonSDKEmb32PUB/LEPTON_AGC.h"		//adding the AGC with the same format as the SDK includes above
+#include "leptonSDKEmb32PUB/LEPTON_VID.h"
 #include <string>
 #include <iostream>
 #include <stdio.h>
@@ -262,7 +263,6 @@ void GetBinExtension() {
 	}
 	uint16_t currentBinExtension;
 	LEP_RESULT result = LEP_GetAgcHeqBinExtension(&_port, &currentBinExtension);
-
 	if(result != LEP_OK) {
 		std::cerr << "Error getting AGC Bin Extension. Error code: " << result << std::endl;
 	} else {
@@ -447,6 +447,7 @@ void lepton_get_histogram_statistics() {
 /*************************************************************************************************************/
 
 // SYS Status
+/*
 void lepton_get_status() {
 	if(!_connected) {
 		lepton_connect();
@@ -457,9 +458,12 @@ void lepton_get_status() {
 	if(result != LEP_OK) {
 		std::cerr << "Error getting status. Error code: " << result << std::endl;
 	} else {
-		std::cout << "Current status: " << currentStatus << std::endl;
+		std::cout << "Current Status: ";
+		std::cout << "Field1: " << currentStatus.LEP_SYSTEM_READY << ", ";
+		std::cout << "Field2: " << currentStatus.field2 << std::endl;
 	}
 }
+*/
 
 
 // AUX temp In kelvin
@@ -536,11 +540,192 @@ void lepton_get_scene_roi() {
 
 
 /*************************************************************************************************************/
-/** VID COMMANDS	                                                                                        **/
+/** VID FOCUS	                                                                                        **/
 /*************************************************************************************************************/
 
+// Set Focus Calculation Enable State
+void SetFocusCalculationEnableState() {
+    if(!_connected) {
+        lepton_connect();
+    }
 
+    LEP_RESULT result = LEP_SetVidFocusCalcEnableState(&_port, LEP_VID_FOCUS_CALC_ENABLE);
+    if(result != LEP_OK) {
+        std::cerr << "Error setting Focus Calculation Enable State. Error code: " << result << std::endl;
+    } else {
+        std::cout << "Focus Calculation Enabled" << std::endl;
+    }
+}
+// Get Focus Calculation Enable State
+void GetFocusCalculationEnableState() {
+	if(!_connected) {
+		lepton_connect();
+	}
 
+	LEP_VID_FOCUS_CALC_ENABLE_E currentFocusState;
+	LEP_RESULT result = LEP_GetVidFocusCalcEnableState(&_port, &currentFocusState);
+	if(result != LEP_OK) {
+		std::cerr << "Error getting Focus Calculation Enable State. Error code: " << result << std::endl;
+	} else {
+		std::cout << (currentFocusState == LEP_VID_FOCUS_CALC_ENABLE ? "Focus Calculation Enabled" : "Focus Calculation Disabled") << std::endl;
+	}
+}
+
+// Set Focus ROI
+void SetFocusRoi(uint16_t startCol, uint16_t startRow, uint16_t endCol, uint16_t endRow) {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_VID_FOCUS_ROI_T focusRoi;
+	focusRoi.startCol = startCol;
+	focusRoi.startRow = startRow;
+	focusRoi.endCol = endCol;
+	focusRoi.endRow = endRow;
+	LEP_RESULT result = LEP_SetVidROI(&_port, focusRoi);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error setting Focus ROI. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Focus ROI set successfully" << std::endl;
+	}
+}
+// Get Focus ROI
+void GetFocusRoi() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_VID_FOCUS_ROI_T currentFocusRoi;
+	LEP_RESULT result = LEP_GetVidROI(&_port, &currentFocusRoi);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error getting Focus ROI. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Current Focus ROI: " << std::endl;
+		std::cout << "Focus Start Column: " << currentFocusRoi.startCol << std::endl;
+		std::cout << "Focus Start Row: " << currentFocusRoi.startRow << std::endl;
+		std::cout << "Focus End Column: " << currentFocusRoi.endCol << std::endl;
+		std::cout << "Focus End Row: " << currentFocusRoi.endRow << std::endl;
+	}
+}
+
+// Get Focus Metric
+void GetFocusMetric() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_VID_FOCUS_METRIC_T currentFocusMetric;
+	LEP_RESULT result = LEP_GetVidFocusMetric(&_port, &currentFocusMetric);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error getting Focus Metric. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Current Focus Metric: " << currentFocusMetric << std::endl;
+	}
+}
+
+// Set Focus Metric Threshold
+void SetFocusMetricThreshold(uint16_t threshold) {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_RESULT result = LEP_SetVidFocusMetricThreshold(&_port, threshold);
+	if(result != LEP_OK) {
+		std::cerr << "Error setting Focus Metric Threshold. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Focus Metric Threshold set successfully" << std::endl;
+	}
+}
+// Get Focus Metric Threshold
+void GetFocusMetricThreshold() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_VID_FOCUS_METRIC_THRESHOLD_T currentThreshold;
+	LEP_RESULT result = LEP_GetVidFocusMetricThreshold(&_port, &currentThreshold);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error getting Focus Metric Threshold. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Current Focus Metric Threshold: " << currentThreshold << std::endl;
+	}
+}
+
+// Set Video Scene-Based Non-Uniformity Correction (SBNUC)
+void SetSceneBasedNucEnableState() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_RESULT result = LEP_SetVidSbNucEnableState(&_port, LEP_VID_SBNUC_ENABLE);
+	if(result != LEP_OK) {
+		std::cerr << "Error setting Scene-Based NUC Enable State. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Scene-Based NUC Enable State set successfully" << std::endl;
+	}
+}
+// Get Video Scene-Based Non-Uniformity Correction (SBNUC)
+
+void GetSceneBasedNucEnableState() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_VID_SBNUC_ENABLE_E currentSbnucState;
+	LEP_RESULT result = LEP_GetVidSbNucEnableState(&_port, &currentSbnucState);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error getting Scene-Based NUC Enable State. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Current Scene-Based NUC Enable State: " << currentSbnucState << std::endl;
+	}
+}
+
+// Set Freeze State
+void SetFreezeState() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_RESULT result = LEP_SetVidFreezeEnableState(&_port, LEP_VID_FREEZE_ENABLE);
+	if(result != LEP_OK) {
+		std::cerr << "Error setting Freeze State. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Freeze State set successfully" << std::endl;
+	}
+}
+void SetUnFreezeState() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_RESULT result = LEP_SetVidFreezeEnableState(&_port, LEP_VID_FREEZE_DISABLE);
+	if(result != LEP_OK) {
+		std::cerr << "Error setting Freeze State. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Freeze State set successfully" << std::endl;
+	}
+}
+void SetEndFreezeState() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_RESULT result = LEP_SetVidFreezeEnableState(&_port, LEP_VID_END_FREEZE_ENABLE);
+	if(result != LEP_OK) {
+		std::cerr << "Error setting Freeze State. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Freeze State set successfully" << std::endl;
+	}
+}
+// Get Freeze State
+void GetFreezeState() {
+	if(!_connected) {
+		lepton_connect();
+	}
+	LEP_VID_FREEZE_ENABLE_E currentFreezeState;
+	LEP_RESULT result = LEP_GetVidFreezeEnableState(&_port, &currentFreezeState);
+
+	if(result != LEP_OK) {
+		std::cerr << "Error getting Freeze State. Error code: " << result << std::endl;
+	} else {
+		std::cout << "Current Freeze State: " << currentFreezeState << std::endl;
+	}
+}
 
 
 void lepton_reboot() {

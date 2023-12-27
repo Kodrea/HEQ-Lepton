@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string>    // added for get state functions
 
+
 void lepton_perform_ffc();
 void lepton_reboot();
 int lepton_connect();
@@ -60,4 +61,25 @@ void lepton_get_scene_statistics(); // Scene Statistics
 void lepton_set_scene_roi(uint16_t startCol, uint16_t startRow, uint16_t endCol, uint16_t endRow); // Scene ROI
 void lepton_get_scene_roi(); // Scene ROI
 
+
+/*********************************************************************************************************
+ * VID Commands
+ ********************************************************************************************************/
+void SetFocusCalculationEnableState();  // Focus Calculation Enable State
+void GetFocusCalculationEnableState();
+void SetFocusRoi(uint16_t startCol, uint16_t startRow, uint16_t endCol, uint16_t endRow);   // Focus ROI
+void GetFocusRoi();
+void GetFocusMetric();
+void SetFocusMetricThreshold(uint16_t threshold); // Focus Metric Threshold
+void GetFocusMetricThreshold();
+void SetSceneBasedNucEnableState(); // Scene Based NUC Enable State
+void GetSceneBasedNucEnableState();
+void SetFreezeState(); // Freeze State
+void SetUnFreezeState();
+void SetEndFreezeState();
+void GetFreezeState();
+
+
+
 #endif
+
