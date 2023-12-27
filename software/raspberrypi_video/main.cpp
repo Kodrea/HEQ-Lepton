@@ -74,6 +74,9 @@ int main( int argc, char **argv )
 	uint16_t emptyCounts = 0;
 	uint16_t normalizationFactor = 0;
 
+	// VID Focus
+
+
 
 	for(int i=1; i < argc; i++) {
 		if (strcmp(argv[i], "-h") == 0) {
@@ -225,6 +228,10 @@ int main( int argc, char **argv )
     QPushButton *button1 = new QPushButton("Perform FFC", myWidget);
     button1->setGeometry(100, IHeight+5, 100, 30); // Adjusted to be centered at the bottom
 
+	// Create a Freeze/Unfreeze button and adjust its position
+	QPushButton *button2 = new QPushButton("Freeze/Unfreeze", myWidget);
+	button2->setGeometry(250, IHeight+5, 100, 30); // Adjusted to be centered at the bottom
+
 	/* Create Sliders to Adjust AGC Parameters */
 	// Clip Low slider
 	QSlider *slider1 = new QSlider(Qt::Vertical, myWidget);
@@ -273,6 +280,8 @@ int main( int argc, char **argv )
 	
 	//connect ffc button to the thread's ffc action
 	QObject::connect(button1, SIGNAL(clicked()), thread, SLOT(performFFC()));
+	// toggle freeze unfreeze button
+	QObject::connect(button2, SIGNAL(clicked()), thread, SLOT(freezeToggle()));
 	// slider for clip Low
 	QObject::connect(slider1, SIGNAL(valueChanged(int)), thread, SLOT(clipLowSlider(int)));
 	// slider for midpoint

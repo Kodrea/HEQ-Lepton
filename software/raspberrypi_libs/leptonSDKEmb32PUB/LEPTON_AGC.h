@@ -298,7 +298,7 @@ extern LEP_RESULT LEP_GetAgcCalcEnableState( LEP_CAMERA_PORT_DESC_T_PTR portDesc
                                              LEP_AGC_ENABLE_E_PTR agcCalculationEnableStatePtr );
 
 extern LEP_RESULT LEP_SetAgcCalcEnableState( LEP_CAMERA_PORT_DESC_T_PTR portDescPtr,
-                                             LEP_AGC_ENABLE_E agcCalculationEnableState ); 
+                                             LEP_AGC_ENABLE_E agcCalculationEnableState );
 
    #ifdef __cplusplus
 

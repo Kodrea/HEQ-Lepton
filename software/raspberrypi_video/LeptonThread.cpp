@@ -52,6 +52,7 @@ LeptonThread::LeptonThread() : QThread()
 	emptyCounts = 0;
 	normalizationFactor = 0;
 
+	// VID Focus
 }
 
 LeptonThread::~LeptonThread() {
@@ -161,6 +162,20 @@ void LeptonThread::dampenSlider(int adjDampen) {
 	GetHeqDampening();
 }
 
+// VID Focus
+int FRZ = 0;
+void LeptonThread::freezeToggle() {
+	if(FRZ == 0) {
+		FRZ = 1;
+		SetFreezeState();
+	}
+	else if (FRZ == 1) {
+		FRZ = 3;
+		SetEndFreezeState();
+		FRZ = 0;
+	}
+}
+
 void LeptonThread::run()
 {
 	//create the initial image
@@ -241,6 +256,18 @@ void LeptonThread::run()
 	GetAgcCalculationState();
 	lepton_get_aux_temp_kelvin();
 	lepton_get_scene_statistics();
+
+	/* FOCUS METRIC */
+
+	if(agcSelect == 0) {
+		//enbale focus metric
+		SetFocusCalculationEnableState();
+		GetFocusCalculationEnableState();
+		GetFocusRoi();
+		GetFocusMetric();
+		GetFocusMetricThreshold();	
+		GetSceneBasedNucEnableState();
+	}
 
 
 	int statLoop = 0;
@@ -408,10 +435,12 @@ void LeptonThread::run()
 			n_zero_value_drop_frame = 0;
 		}
 
-		//update statistics every 30 frames
-		if (statLoop % 30 == 0) {
+		//update statistics periodically
+		if (statLoop % 20 == 0) {
 			lepton_get_scene_statistics();
 			GetAgcCalculationState();
+			GetFocusMetric();
+
 		}
 		//lets emit the signal for update
 		emit updateImage(myImage);
